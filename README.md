@@ -114,4 +114,4 @@ After the action runs, a comment like the following will appear on the PR:
 
 ## License
 
-MIT © [HJS Foundation](https://humanjudgment.org)
+MIT
