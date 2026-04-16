@@ -1,14 +1,12 @@
 {
   "name": "jep-github-action",
   "version": "0.1.0",
-  "description": "为 AI Agent 发起的 GitHub 操作生成 JEP 问责收据",
+  "description": "Generate JEP accountability receipts for AI-driven GitHub actions",
   "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build src/index.ts -o dist",
-    "clean": "rm -rf dist",
-    "test": "echo \"No tests yet\""
+    "build": "ncc build src/index.ts -o dist"
   },
-  "keywords": ["github-action", "jep", "accountability", "ai", "audit"],
+  "keywords": ["github-action", "jep", "accountability"],
   "author": "HJS Foundation",
   "license": "MIT",
   "dependencies": {
