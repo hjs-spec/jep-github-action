@@ -1,0 +1,40 @@
+name: 'JEP Accountability for GitHub'
+description: '为 AI Agent 发起的 GitHub 操作生成 JEP 问责收据'
+author: 'HJS Foundation'
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  github_token:
+    description: 'GitHub Token'
+    required: true
+    default: ${{ github.token }}
+  operation:
+    description: '操作类型 (pr_merge, pr_create, issue_close 等)'
+    required: true
+  actor:
+    description: '操作者标识 (DID/邮箱)'
+    required: true
+  reason:
+    description: '操作理由'
+    required: true
+  jep_api_url:
+    description: 'JEP API 地址'
+    required: false
+    default: 'http://localhost:18789'
+  dry_run:
+    description: '是否仅模拟运行'
+    required: false
+    default: 'false'
+
+outputs:
+  jep_receipt_id:
+    description: '生成的 JEP 收据 ID'
+  jep_event_json:
+    description: '完整的 JEP 事件 JSON'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
