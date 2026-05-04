@@ -1,117 +1,138 @@
-# JEP Accountability for GitHub
+# JEP GitHub Action v0.6
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/hjs-foundation/jep-github-action)
-![GitHub Marketplace](https://img.shields.io/badge/GitHub%20Marketplace-JEP%20Accountability-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+GitHub Action seed for generating **JEP v0.6 event artifacts** from GitHub workflow activity.
 
-A GitHub Action that generates cryptographically signed [JEP (Judgment Event Protocol)](https://humanjudgment.org) accountability receipts for AI agent operations on GitHub.
+This repository replaces the earlier JEP-04 / accountability-receipt demo language with a JEP v0.6 workflow integration seed.
 
-## Features
+## Positioning
 
-- Automatically generate JEP accountability events on PR merges, PR creation, issue closures, and more
-- Post JEP receipts as PR comments for full transparency
-- Add commit status checks showing accountability verification
-- Optionally send events to a JEP API endpoint for centralized storage
-- Fully configurable operation types and actor identification
+This action generates JEP-style event artifacts for GitHub workflows.
+
+It is intended for:
+
+- pull request review traces;
+- issue triage events;
+- workflow approval events;
+- release or deployment decision records;
+- CI/CD audit artifacts.
+
+It does **not** determine:
+
+- legal liability;
+- factual truth;
+- regulatory compliance;
+- authorization validity;
+- complete-log availability;
+- moral responsibility.
+
+A generated event artifact is a structured protocol object. It is not a legal conclusion.
+
+## Alignment
+
+Aligned with:
+
+- JEP-Core: `draft-wang-jep-judgment-event-protocol-06`
+- JEP-Profiles: `draft-wang-jep-profiles-00`
+- JEP-Conformance: `draft-wang-jep-conformance-00`
+
+Public draft:
+
+https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/
+
+## What this Action emits
+
+The action emits:
+
+- a JEP v0.6-style event JSON object;
+- an algorithm-tagged event hash;
+- a JEP-style validation result;
+- optional artifact upload.
+
+The action can run in two modes:
+
+| Mode | Meaning |
+|---|---|
+| `artifact` | Generate unsigned local JEP event artifacts |
+| `api` | Send the event draft to a JEP API signer/verifier |
+
+In `artifact` mode, the action intentionally uses:
+
+```text
+sig: "UNSIGNED-WORKFLOW-ARTIFACT"
+```
+
+It does not pretend that a local hash is a signature.
+
+For signed events, configure `mode: api` and provide a JEP API endpoint.
 
 ## Usage
 
-### Record accountability on PR merge
-
 ```yaml
-name: JEP Accountability
+name: JEP Event Artifact
+
 on:
   pull_request:
-    types: [closed]
+  workflow_dispatch:
 
 jobs:
-  jep-audit:
-    if: github.event.pull_request.merged == true && github.actor == 'dependabot[bot]'
+  jep:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate JEP Receipt
-        uses: hjs-foundation/jep-github-action@v0.1
+      - uses: actions/checkout@v4
+
+      - uses: hjs-spec/jep-github-action@v0.6.0
+        id: jep
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          operation: "pr_merge"
-          actor: "dependabot[bot]"
-          reason: "Automated dependency update merge"
-```
-
-### Record accountability when an AI agent creates a PR
-
-```yaml
-name: JEP Accountability for AI PR
-on:
-  pull_request:
-    types: [opened]
-
-jobs:
-  jep-audit:
-    if: contains(github.actor, '[bot]')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate JEP Receipt
-        uses: hjs-foundation/jep-github-action@v0.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          operation: "pr_create"
+          mode: artifact
+          verb: J
           actor: ${{ github.actor }}
-          reason: "AI agent automatically created PR"
-```
+          subject: ${{ github.event_name }}
+          relation: workflow-event
+          upload_artifact: true
 
-### Dry run mode (no side effects)
-
-```yaml
-- uses: hjs-foundation/jep-github-action@v0.1
-  with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-    operation: "pr_merge"
-    actor: "test-user"
-    reason: "Testing JEP integration"
-    dry_run: "true"
+      - run: echo "${{ steps.jep.outputs.jep_event_hash }}"
 ```
 
 ## Inputs
 
-| Name | Description | Required |
-|:-----|:------------|:---------|
-| `github_token` | GitHub Token for API access | Yes |
-| `operation` | Operation type (e.g., `pr_merge`, `pr_create`, `issue_close`) | Yes |
-| `actor` | Actor identifier (DID / email / username) | Yes |
-| `reason` | Human-readable reason for the operation | Yes |
-| `jep_api_url` | Optional JEP API endpoint URL | No |
-| `dry_run` | If `true`, skips posting comments and sending to API | No |
+| Input | Default | Description |
+|---|---|---|
+| `mode` | `artifact` | `artifact` or `api` |
+| `verb` | `J` | JEP verb: `J`, `D`, `T`, or `V` |
+| `actor` | `${{ github.actor }}` | Actor identifier |
+| `subject` | `${{ github.event_name }}` | Event subject |
+| `relation` | `workflow-event` | Workflow relation note |
+| `audience` | `${{ github.repository }}` | Intended audience/context |
+| `jep_api_url` | empty | Optional JEP API endpoint for `api` mode |
+| `upload_artifact` | `true` | Upload generated JSON artifact |
 
 ## Outputs
 
-| Name | Description |
-|:-----|:------------|
-| `jep_receipt_id` | The generated JEP receipt ID (UUID v4) |
-| `jep_event_json` | Full JEP event as a JSON string |
+| Output | Description |
+|---|---|
+| `jep_event_hash` | Algorithm-tagged event hash |
+| `jep_event_json` | Generated JEP event JSON |
+| `validation_result_json` | JEP-style validation result |
+| `artifact_path` | Local artifact path |
 
-## Example JEP Receipt Posted on PR
+## Boundary
 
-After the action runs, a comment like the following will appear on the PR:
+This action does not define a new JEP protocol.
 
-> ## 📋 JEP Accountability Receipt
->
-> | Field | Value |
-> |:------|:------|
-> | Operation | pr_merge |
-> | Actor | dependabot[bot] |
-> | Reason | Automated dependency update merge |
-> | Receipt ID | `f47ac10b-58cc-4372-a567-0e02b2c3d479` |
-> | Timestamp | 2026-04-16T10:30:00.000Z |
->
-> <details>
-> <summary>Full JEP Event JSON</summary>
->
-> ```json
-> { ... }
-> ```
-> </details>
+It does not replace:
 
-## License
+- JEP-Core;
+- JEP-Profiles;
+- JEP-Conformance;
+- HJS;
+- JAC;
+- legal or regulatory systems.
 
-MIT
+## Related resources
+
+- JEP v0.6 Repository: https://github.com/hjs-spec/jep-v06
+- JEP API v0.6 Repository: https://github.com/hjs-spec/jep-api
+- HJS v0.5 Repository: https://github.com/hjs-spec/hjs-05
+- JAC v0.5 Repository: https://github.com/hjs-spec/jac-agent-02
+- JEP v0.6 Spec Demo: https://huggingface.co/spaces/yuqiangJEP/jep-v06-spec-demo/tree/main
+- JEP v0.6 Conformance Suite: https://huggingface.co/datasets/yuqiangJEP/jep-v06-conformance-suite
