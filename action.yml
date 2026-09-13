@@ -55,8 +55,8 @@ outputs:
     description: "Local path to the generated artifact"
 
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: "node24"
+  main: "dist/index.mjs"
 
 branding:
   icon: "check-circle"

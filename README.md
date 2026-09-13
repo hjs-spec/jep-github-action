@@ -136,3 +136,5 @@ It does not replace:
 - JAC v0.5 Repository: https://github.com/hjs-spec/jac-agent-02
 - JEP v0.6 Spec Demo: https://huggingface.co/spaces/yuqiangJEP/jep-v06-spec-demo/tree/main
 - JEP v0.6 Conformance Suite: https://huggingface.co/datasets/yuqiangJEP/jep-v06-conformance-suite
+
+The Action runtime and build require Node 24. Custom runners must support node24 JavaScript actions. Rebuild with npm ci and npm run build in the checkout itself; keep the committed bundle consistency check enabled.

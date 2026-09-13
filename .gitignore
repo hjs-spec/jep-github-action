@@ -1,2 +1,4 @@
 node_modules
 jep-event-artifact.json
+
+.build/

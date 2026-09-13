@@ -1,0 +1,11 @@
+const { execFileSync } = require('node:child_process');
+const fs = require('node:fs');
+const tsc = require.resolve('typescript/bin/tsc');
+const ncc = require.resolve('@vercel/ncc/dist/ncc/cli.js');
+const run = (script, args) => execFileSync(process.execPath, [script, ...args], { stdio: 'inherit' });
+run(tsc, []);
+run(tsc, ['--module', 'ESNext', '--moduleResolution', 'Bundler', '--outDir', '.build']);
+fs.writeFileSync('.build/package.json', JSON.stringify({ type: 'module' }) + '\n');
+run(ncc, ['build', '.build/index.js', '-o', 'dist', '-m', '--license', 'licenses.txt']);
+fs.renameSync('dist/index.js', 'dist/index.mjs');
+fs.rmSync('dist/package.json', { force: true });

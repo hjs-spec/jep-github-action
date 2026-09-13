@@ -3,7 +3,7 @@ import * as github from "@actions/github";
 import { DefaultArtifactClient } from "@actions/artifact";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { buildJepEvent, validateArtifact, eventHash, JEPVerb } from "./jep";
+import { buildJepEvent, validateArtifact, eventHash, JEPVerb } from "./jep.js";
 
 async function run(): Promise<void> {
   try {
