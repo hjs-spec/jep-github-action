@@ -1,6 +1,6 @@
 {
   "name": "jep-github-action",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "GitHub Action seed for generating JEP v0.6 event artifacts",
   "main": "dist/index.mjs",
   "type": "commonjs",
