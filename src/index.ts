@@ -18,6 +18,8 @@ async function run(): Promise<void> {
     const audience = core.getInput("audience") || github.context.repo.owner + "/" + github.context.repo.repo;
     const uploadArtifact = (core.getInput("upload_artifact") || "true").toLowerCase() === "true";
     const apiUrl = core.getInput("jep_api_url");
+    const apiToken = core.getInput("jep_api_token");
+    if (apiToken) core.setSecret(apiToken);
 
     let event = buildJepEvent({
       verb,
@@ -44,7 +46,7 @@ async function run(): Promise<void> {
       const response = await fetch(`${apiUrl.replace(/\/$/, "")}/events/create`, {
         method: "POST",
         signal: AbortSignal.timeout(30000),
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...(apiToken ? { authorization: `Bearer ${apiToken}` } : {}) },
         body: JSON.stringify({
           verb: event.verb,
           who: event.who,

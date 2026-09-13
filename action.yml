@@ -39,6 +39,10 @@ inputs:
     description: "Optional JEP API URL for api mode"
     required: false
     default: ""
+  jep_api_token:
+    description: "Bearer token for authenticated API signing; pass a GitHub secret"
+    required: false
+    default: ""
   upload_artifact:
     description: "Upload the generated event artifact"
     required: false
