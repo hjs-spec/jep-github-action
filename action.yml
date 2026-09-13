@@ -11,6 +11,14 @@ inputs:
     description: "JEP verb: J, D, T, or V"
     required: false
     default: "J"
+  what_json:
+    description: "JSON claim object or digest; required for D/T/V"
+    required: false
+    default: ""
+  event_ref:
+    description: "Referenced JEP event digest; distinct from the Git ref"
+    required: false
+    default: ""
   actor:
     description: "Actor identifier"
     required: false
@@ -47,8 +55,8 @@ outputs:
     description: "Local path to the generated artifact"
 
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: "node24"
+  main: "dist/index.mjs"
 
 branding:
   icon: "check-circle"

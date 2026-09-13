@@ -1,0 +1,21 @@
+name: Action build and regression tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm test
+      - name: Check committed bundle
+        run: git diff --exit-code -- dist
+      - name: Run packaged action
+        uses: ./
+        with:
+          upload_artifact: 'true'
