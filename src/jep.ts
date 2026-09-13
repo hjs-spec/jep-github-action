@@ -1,4 +1,10 @@
 import crypto from "node:crypto";
+import { Ajv2020 } from "ajv/dist/2020";
+import addFormats from "ajv-formats";
+import schema from "./jep-event.schema.json";
+const ajv = new Ajv2020({strict: false});
+addFormats(ajv);
+const validSchema = ajv.compile(schema);
 
 export const JEP_WIRE_VERSION = "1";
 export const JEP_CORE_PROFILE = "jep-core-0.6";
@@ -14,7 +20,7 @@ export interface JEPEvent {
   what: unknown;
   nonce: string;
   aud: string;
-  ref: string | null;
+  ref: string | Record<string, unknown> | null;
   ext?: Record<string, unknown>;
   ext_crit?: string[];
   sig: string;
@@ -42,25 +48,27 @@ export interface BuildEventOptions {
   runId?: string;
   sha?: string;
   ref?: string;
+  what?: unknown;
+  eventRef?: string | Record<string, unknown> | null;
 }
 
 export function canonicalize(value: unknown): string {
-  return JSON.stringify(sortJson(value));
-}
-
-function sortJson(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(sortJson);
+  if (value === null) return "null";
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new Error("Non-finite JSON number");
+    return JSON.stringify(value);
   }
-  if (value && typeof value === "object") {
+  if (typeof value === "boolean") return JSON.stringify(value);
+  if (typeof value === "string") {
+    if (/[\uD800-\uDFFF]/u.test(value)) throw new Error("Lone Unicode surrogate");
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return "[" + value.map(canonicalize).join(",") + "]";
+  if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
-    for (const key of Object.keys(obj).sort()) {
-      out[key] = sortJson(obj[key]);
-    }
-    return out;
+    return "{" + Object.keys(obj).sort().map(k => canonicalize(k) + ":" + canonicalize(obj[k])).join(",") + "}";
   }
-  return value;
+  throw new Error("Unsupported JSON value");
 }
 
 export function sha256Tagged(value: unknown): string {
@@ -75,7 +83,10 @@ export function eventHash(event: JEPEvent): string {
 export function buildJepEvent(options: BuildEventOptions): JEPEvent {
   const now = Math.floor(Date.now() / 1000);
 
-  const what = {
+  if (options.verb !== "J" && options.what === undefined) {
+    throw new Error("D/T/V require what_json with the verb-specific claim fields");
+  }
+  const what = options.what === undefined ? Object.fromEntries(Object.entries({
     subject: options.subject,
     relation: options.relation,
     repository: options.repository,
@@ -83,7 +94,7 @@ export function buildJepEvent(options: BuildEventOptions): JEPEvent {
     run_id: options.runId,
     sha: options.sha,
     github_ref: options.ref
-  };
+  }).filter(([, value]) => value !== undefined)) : options.what;
 
   const event: JEPEvent = {
     jep: JEP_WIRE_VERSION,
@@ -93,7 +104,7 @@ export function buildJepEvent(options: BuildEventOptions): JEPEvent {
     what,
     nonce: crypto.randomUUID(),
     aud: options.audience,
-    ref: null,
+    ref: options.eventRef ?? null,
     ext: {
       [JAC_CHAIN_EXT]: {
         based_on: options.sha ? `sha256:${crypto.createHash("sha256").update(options.sha).digest("hex")}` : null,
@@ -102,7 +113,7 @@ export function buildJepEvent(options: BuildEventOptions): JEPEvent {
         observed_log_assumption: "partial"
       }
     },
-    ext_crit: [JAC_CHAIN_EXT],
+    ext_crit: [],
     sig: "UNSIGNED-WORKFLOW-ARTIFACT"
   };
 
@@ -113,17 +124,8 @@ export function validateArtifact(event: JEPEvent): ValidationResult {
   const errors: Array<Record<string, unknown>> = [];
   const warnings: Array<Record<string, unknown>> = [];
 
-  if (event.jep !== JEP_WIRE_VERSION) {
-    errors.push({ code: "ERR_UNSUPPORTED_JEP_VERSION", message: "jep must be '1'" });
-  }
-  if (!["J", "D", "T", "V"].includes(event.verb)) {
-    errors.push({ code: "ERR_UNKNOWN_VERB", message: "verb must be J/D/T/V" });
-  }
-  if (!event.who) {
-    errors.push({ code: "ERR_MISSING_REQUIRED_FIELD", message: "who is required" });
-  }
-  if (!event.nonce) {
-    errors.push({ code: "ERR_MISSING_REQUIRED_FIELD", message: "nonce is required" });
+  if (!validSchema(event)) {
+    errors.push({code: "ERR_SCHEMA_INVALID", message: ajv.errorsText(validSchema.errors)});
   }
   if (event.sig === "UNSIGNED-WORKFLOW-ARTIFACT") {
     warnings.push({

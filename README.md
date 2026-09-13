@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: hjs-spec/jep-github-action@v0.6.0
+      - uses: hjs-spec/jep-github-action@main
         id: jep
         with:
           mode: artifact

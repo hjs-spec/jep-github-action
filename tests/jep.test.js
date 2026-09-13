@@ -20,7 +20,7 @@ test("builds JEP v0.6 event artifact", () => {
   assert.equal(event.verb, "J");
   assert.equal(event.sig, "UNSIGNED-WORKFLOW-ARTIFACT");
   assert.ok(event.ext[JAC_CHAIN_EXT]);
-  assert.ok(event.ext_crit.includes(JAC_CHAIN_EXT));
+  assert.deepEqual(event.ext_crit, []);
 });
 
 test("produces algorithm-tagged event hash", () => {
@@ -46,4 +46,15 @@ test("validates artifact with unsigned warning", () => {
   assert.equal(result.valid, true);
   assert.equal(result.profile, "jep-core-0.6");
   assert.equal(result.warnings[0].code, "WARN_UNSIGNED_ARTIFACT");
+});
+
+const {canonicalize} = require("../dist/jep");
+test("JCS sorts numeric property names lexically", () => {
+  assert.equal(canonicalize({"2": 2, "10": 10}), '{"10":10,"2":2}');
+  assert.throws(() => canonicalize({x: NaN}));
+});
+test("D/T/V cannot reuse an unqualified workflow claim", () => {
+  assert.throws(() => buildJepEvent({verb:"D", actor:"a", subject:"s", relation:"r", audience:"b"}), /what_json/);
+  const event = buildJepEvent({verb:"V", actor:"a", subject:"s", relation:"r", audience:"b", what:{verification_scope:["syntax"]}, eventRef:"sha256:" + "a".repeat(64)});
+  assert.equal(validateArtifact(event).valid, true);
 });

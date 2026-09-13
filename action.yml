@@ -11,6 +11,14 @@ inputs:
     description: "JEP verb: J, D, T, or V"
     required: false
     default: "J"
+  what_json:
+    description: "JSON claim object or digest; required for D/T/V"
+    required: false
+    default: ""
+  event_ref:
+    description: "Referenced JEP event digest; distinct from the Git ref"
+    required: false
+    default: ""
   actor:
     description: "Actor identifier"
     required: false

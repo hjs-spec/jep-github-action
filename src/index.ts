@@ -3,11 +3,14 @@ import * as github from "@actions/github";
 import { DefaultArtifactClient } from "@actions/artifact";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { buildJepEvent, validateArtifact, JEPVerb } from "./jep";
+import { buildJepEvent, validateArtifact, eventHash, JEPVerb } from "./jep";
 
 async function run(): Promise<void> {
   try {
     const mode = core.getInput("mode") || "artifact";
+    if (!["artifact", "api"].includes(mode)) throw new Error("mode must be artifact or api");
+    const whatJson = core.getInput("what_json");
+    const eventRef = core.getInput("event_ref");
     const verb = (core.getInput("verb") || "J") as JEPVerb;
     const actor = core.getInput("actor") || github.context.actor || "github-actions";
     const subject = core.getInput("subject") || github.context.eventName;
@@ -18,6 +21,8 @@ async function run(): Promise<void> {
 
     let event = buildJepEvent({
       verb,
+      what: whatJson ? JSON.parse(whatJson) : undefined,
+      eventRef: eventRef || null,
       actor,
       subject,
       relation,
@@ -30,6 +35,7 @@ async function run(): Promise<void> {
     });
 
     let validation = validateArtifact(event);
+    if (!validation.valid) throw new Error(JSON.stringify(validation.errors));
 
     if (mode === "api") {
       if (!apiUrl) {
@@ -37,12 +43,14 @@ async function run(): Promise<void> {
       }
       const response = await fetch(`${apiUrl.replace(/\/$/, "")}/events/create`, {
         method: "POST",
+        signal: AbortSignal.timeout(30000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           verb: event.verb,
           who: event.who,
           what: event.what,
           aud: event.aud,
+          ref: event.ref,
           ext: event.ext,
           ext_crit: event.ext_crit
         })
@@ -53,7 +61,12 @@ async function run(): Promise<void> {
       const data = await response.json() as { event: typeof event; validation: typeof validation };
       event = data.event;
       validation = data.validation;
+      if (!validateArtifact(event).valid || eventHash(event) !== validation.event_hash) {
+        throw new Error("JEP API returned an inconsistent event or hash");
+      }
     }
+
+    if (validation.valid !== true) throw new Error("JEP API validation failed: " + JSON.stringify(validation.errors));
 
     const artifactPath = path.join(process.cwd(), "jep-event-artifact.json");
     const artifact = {
