@@ -1,4 +1,6 @@
-# JEP GitHub Action v0.6
+# JEP GitHub Action — historical Core 0.6 integration
+
+For new Core 0.7 integrations, use [Quickstart](https://github.com/hjs-spec/jep-quickstart) and the [CLI](https://github.com/hjs-spec/cli). This Action retains its explicit 0.6 contract; a repository rename does not upgrade its emitted format.
 
 GitHub Action seed for generating **JEP v0.6 event artifacts** from GitHub workflow activity.
 
@@ -130,9 +132,9 @@ It does not replace:
 
 ## Related resources
 
-- JEP v0.6 Repository: https://github.com/hjs-spec/jep-v06
-- JEP API v0.6 Repository: https://github.com/hjs-spec/jep-api
-- HJS v0.5 Repository: https://github.com/hjs-spec/hjs-05
+- Historical Core 0.6 source: https://github.com/hjs-spec/jep-core/blob/main/draft-wang-jep-judgment-event-protocol-06.md
+- API with explicit legacy `/events/*` routes: https://github.com/hjs-spec/jep-api
+- HJS public draft: https://datatracker.ietf.org/doc/draft-wang-hjs-accountability/
 - JAC v0.5 Repository: https://github.com/hjs-spec/jac-agent-02
 - JEP v0.6 Spec Demo: https://huggingface.co/spaces/yuqiangJEP/jep-v06-spec-demo/tree/main
 - JEP v0.6 Conformance Suite: https://huggingface.co/datasets/yuqiangJEP/jep-v06-conformance-suite
